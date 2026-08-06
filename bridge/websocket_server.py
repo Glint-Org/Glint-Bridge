@@ -13,6 +13,8 @@ except ImportError:
 from .capture import capture_screenshot, batch_capture
 from .adb_usb import list_usb_devices
 from .adb_wifi import connect_wifi, list_wifi_devices
+from .crawler import crawl_app
+from .session import write_session, load_session
 
 WS_PORT = 7700
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "output"
@@ -32,17 +34,68 @@ async def handler(websocket):
 
             elif action == "capture_single":
                 path = capture_screenshot()
+                session = load_session()
                 await websocket.send(json.dumps({
                     "type": "screenshot",
                     "path": path,
+                    "session": session,
                 }))
 
             elif action == "capture_batch":
                 count = data.get("count", 5)
                 paths = batch_capture(count=count)
+                app = data.get("app", "Captured App")
+                tagline = data.get("tagline")
+                if paths:
+                    write_session(
+                        screens=[Path(p).name for p in paths],
+                        app=app,
+                        tagline=tagline,
+                        output_dir=OUTPUT_DIR,
+                    )
+                session = load_session()
                 await websocket.send(json.dumps({
                     "type": "batch_result",
                     "paths": paths,
+                    "session": session,
+                }))
+
+            elif action == "crawl":
+                package = data.get("package")
+                max_screens = data.get("max_screens", 20)
+                app = data.get("app", "Captured App")
+                tagline = data.get("tagline")
+                if not package:
+                    await websocket.send(json.dumps({
+                        "type": "error",
+                        "message": "package is required for crawl action",
+                    }))
+                else:
+                    try:
+                        paths = crawl_app(package, max_screens=max_screens)
+                        write_session(
+                            screens=[Path(p).name for p in paths],
+                            app=app,
+                            tagline=tagline,
+                            output_dir=OUTPUT_DIR,
+                        )
+                        session = load_session()
+                        await websocket.send(json.dumps({
+                            "type": "crawl_result",
+                            "paths": paths,
+                            "session": session,
+                        }))
+                    except RuntimeError as e:
+                        await websocket.send(json.dumps({
+                            "type": "error",
+                            "message": str(e),
+                        }))
+
+            elif action == "get_session":
+                session = load_session()
+                await websocket.send(json.dumps({
+                    "type": "session",
+                    "session": session,
                 }))
 
             elif action == "list_devices":
