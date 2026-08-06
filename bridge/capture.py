@@ -3,6 +3,8 @@ import os
 import re
 from pathlib import Path
 
+from .session import update_session_with_capture, write_session
+
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "output"
 
 
@@ -17,6 +19,8 @@ def capture_screenshot(serial: str | None = None, filename: str | None = None) -
     dest = OUTPUT_DIR / filename
 
     cmd = ["adb", "exec-out", "screencap", "-p"]
+    if serial:
+        cmd = ["adb", "-s", serial, "exec-out", "screencap", "-p"]
     with open(dest, "wb") as f:
         result = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE, check=False)
 
@@ -24,6 +28,7 @@ def capture_screenshot(serial: str | None = None, filename: str | None = None) -
         dest.unlink(missing_ok=True)
         return None
 
+    update_session_with_capture(str(dest))
     return str(dest)
 
 
@@ -36,6 +41,13 @@ def batch_capture(serial: str | None = None, count: int = 5, delay: float = 1.0)
             paths.append(path)
         if i < count - 1:
             time.sleep(delay)
+
+    if paths:
+        write_session(
+            screens=[Path(p).name for p in paths],
+            app="Captured App",
+            output_dir=OUTPUT_DIR,
+        )
     return paths
 
 
