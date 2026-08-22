@@ -1,7 +1,6 @@
 import asyncio
 import json
-import struct
-import time
+import secrets
 from pathlib import Path
 
 try:
@@ -20,9 +19,32 @@ WS_PORT = 7700
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "output"
 
 connected_clients = set()
+_PAIRING_TOKEN: str | None = None
+
+
+def _generate_token() -> str:
+    return secrets.token_hex(4)
 
 
 async def handler(websocket):
+    global _PAIRING_TOKEN
+
+    # First message must be a valid pairing token
+    try:
+        raw = await asyncio.wait_for(websocket.recv(), timeout=5.0)
+        data = json.loads(raw)
+        if data.get("action") != "pair" or data.get("token") != _PAIRING_TOKEN:
+            await websocket.send(json.dumps({
+                "type": "error",
+                "message": "Invalid pairing token. Request denied.",
+            }))
+            await websocket.close(1008, "Unauthorized")
+            return
+    except (asyncio.TimeoutError, json.JSONDecodeError):
+        await websocket.close(1008, "Pairing required")
+        return
+
+    await websocket.send(json.dumps({"type": "paired", "success": True}))
     connected_clients.add(websocket)
     try:
         async for raw in websocket:
@@ -125,8 +147,12 @@ async def handler(websocket):
         connected_clients.discard(websocket)
 
 
-async def start_server(host: str = "0.0.0.0", port: int = WS_PORT):
+async def start_server(host: str = "127.0.0.1", port: int = WS_PORT):
+    global _PAIRING_TOKEN
+    _PAIRING_TOKEN = _generate_token()
     print(f"Glint Bridge WebSocket server on ws://{host}:{port}")
+    print(f"Pairing token: {_PAIRING_TOKEN}")
+    print("Clients must send {\"action\":\"pair\",\"token\":\"<token>\"} as first message.")
     async with websockets.serve(handler, host, port):
         await asyncio.Future()
 
