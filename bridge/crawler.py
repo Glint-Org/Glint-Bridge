@@ -1,5 +1,4 @@
 import time
-from pathlib import Path
 
 from .capture import capture_screenshot
 
@@ -23,8 +22,12 @@ def crawl_app(app_package: str, max_screens: int = 20, output_dir: str | None = 
     if not APPIUM_AVAILABLE:
         raise RuntimeError("Appium is not installed. Install with: pip install Appium-Python-Client")
 
-    driver = webdriver.Remote("http://localhost:4723", DESIRED_CAPS)
+    driver = None
     paths = []
+    try:
+        driver = webdriver.Remote("http://localhost:4723", DESIRED_CAPS)
+    except Exception as e:
+        raise RuntimeError(f"Cannot connect to Appium server: {e}") from e
 
     try:
         for i in range(max_screens):
@@ -56,6 +59,7 @@ def crawl_app(app_package: str, max_screens: int = 20, output_dir: str | None = 
                 if not tapped:
                     break
     finally:
-        driver.quit()
+        if driver is not None:
+            driver.quit()
 
     return paths

@@ -1,11 +1,23 @@
 import subprocess
-import os
 import re
+import time
 from pathlib import Path
 
 from .session import update_session_with_capture, write_session
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "output"
+
+
+def _run_adb(args: list[str], capture: bool = True) -> subprocess.CompletedProcess | None:
+    try:
+        return subprocess.run(
+            ["adb"] + args,
+            capture_output=capture,
+            text=not capture,
+            check=False,
+        )
+    except FileNotFoundError:
+        return None
 
 
 def capture_screenshot(serial: str | None = None, filename: str | None = None) -> str | None:
@@ -18,13 +30,17 @@ def capture_screenshot(serial: str | None = None, filename: str | None = None) -
 
     dest = OUTPUT_DIR / filename
 
-    cmd = ["adb", "exec-out", "screencap", "-p"]
+    cmd = ["exec-out", "screencap", "-p"]
     if serial:
-        cmd = ["adb", "-s", serial, "exec-out", "screencap", "-p"]
+        cmd = ["-s", serial, "exec-out", "screencap", "-p"]
     with open(dest, "wb") as f:
-        result = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE, check=False)
+        result = _run_adb(cmd)
+        if result is None:
+            dest.unlink(missing_ok=True)
+            return None
+        f.write(result.stdout if isinstance(result.stdout, bytes) else b"")
 
-    if result.returncode != 0 or dest.stat().st_size == 0:
+    if result.returncode != 0 or not dest.exists() or dest.stat().st_size == 0:
         dest.unlink(missing_ok=True)
         return None
 
@@ -33,7 +49,6 @@ def capture_screenshot(serial: str | None = None, filename: str | None = None) -
 
 
 def batch_capture(serial: str | None = None, count: int = 5, delay: float = 1.0) -> list[str]:
-    import time
     paths = []
     for i in range(count):
         path = capture_screenshot(serial, f"batch_{i+1:04d}.png")
@@ -52,8 +67,12 @@ def batch_capture(serial: str | None = None, count: int = 5, delay: float = 1.0)
 
 
 def get_device_resolution(serial: str | None = None) -> tuple[int, int] | None:
-    cmd = ["adb", "shell", "wm", "size"]
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    cmd = ["shell", "wm", "size"]
+    if serial:
+        cmd = ["-s", serial, "shell", "wm", "size"]
+    result = _run_adb(cmd)
+    if result is None:
+        return None
     match = re.search(r"(\d+)x(\d+)", result.stdout)
     if match:
         return int(match.group(1)), int(match.group(2))

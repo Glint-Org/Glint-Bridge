@@ -1,19 +1,27 @@
 import subprocess
-import re
+
+
+def _run_adb(args: list[str]) -> subprocess.CompletedProcess | None:
+    try:
+        return subprocess.run(
+            ["adb"] + args, capture_output=True, text=True, check=False
+        )
+    except FileNotFoundError:
+        return None
 
 
 def connect_wifi(ip: str, port: int = 5555) -> bool:
     addr = f"{ip}:{port}"
-    result = subprocess.run(
-        ["adb", "connect", addr], capture_output=True, text=True, check=False
-    )
+    result = _run_adb(["connect", addr])
+    if result is None:
+        return False
     return "connected" in result.stdout.lower()
 
 
 def list_wifi_devices() -> list[dict]:
-    result = subprocess.run(
-        ["adb", "devices"], capture_output=True, text=True, check=False
-    )
+    result = _run_adb(["devices"])
+    if result is None:
+        return []
     devices = []
     for line in result.stdout.strip().splitlines():
         if ":" in line and "device" in line:
@@ -23,8 +31,5 @@ def list_wifi_devices() -> list[dict]:
 
 
 def disconnect(ip: str, port: int = 5555) -> bool:
-    result = subprocess.run(
-        ["adb", "disconnect", f"{ip}:{port}"],
-        capture_output=True, text=True, check=False
-    )
-    return result.returncode == 0
+    result = _run_adb(["disconnect", f"{ip}:{port}"])
+    return result is not None and result.returncode == 0

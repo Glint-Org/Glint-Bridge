@@ -48,7 +48,10 @@ async def handler(websocket):
     connected_clients.add(websocket)
     try:
         async for raw in websocket:
-            data = json.loads(raw)
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
             action = data.get("action")
 
             if action == "ping":
@@ -130,13 +133,19 @@ async def handler(websocket):
                 }))
 
             elif action == "connect_wifi":
-                ip = data["ip"]
-                port = data.get("port", 5555)
-                ok = connect_wifi(ip, port)
-                await websocket.send(json.dumps({
-                    "type": "connect_result",
-                    "success": ok,
-                }))
+                ip = data.get("ip")
+                if not ip:
+                    await websocket.send(json.dumps({
+                        "type": "error",
+                        "message": "ip is required for connect_wifi action",
+                    }))
+                else:
+                    port = data.get("port", 5555)
+                    ok = connect_wifi(ip, port)
+                    await websocket.send(json.dumps({
+                        "type": "connect_result",
+                        "success": ok,
+                    }))
 
             else:
                 await websocket.send(json.dumps({

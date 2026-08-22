@@ -1,11 +1,19 @@
 import subprocess
-import sys
+
+
+def _run_adb(args: list[str]) -> subprocess.CompletedProcess | None:
+    try:
+        return subprocess.run(
+            ["adb"] + args, capture_output=True, text=True, check=False
+        )
+    except FileNotFoundError:
+        return None
 
 
 def list_usb_devices() -> list[dict]:
-    result = subprocess.run(
-        ["adb", "devices", "-l"], capture_output=True, text=True, check=False
-    )
+    result = _run_adb(["devices", "-l"])
+    if result is None:
+        return []
     devices = []
     for line in result.stdout.strip().splitlines():
         if line.startswith("List") or "device" not in line:
@@ -29,8 +37,8 @@ def connect_usb() -> bool:
 
 
 def disconnect(serial: str | None = None) -> bool:
-    cmd = ["adb", "disconnect"]
+    cmd = ["disconnect"]
     if serial:
         cmd.append(serial)
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-    return result.returncode == 0
+    result = _run_adb(cmd)
+    return result is not None and result.returncode == 0
