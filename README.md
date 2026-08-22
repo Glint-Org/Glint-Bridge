@@ -2,15 +2,15 @@
 
 ADB-based screenshot capture for Android devices. Part of the [Glint](https://github.com/darkmintis/Glint-Org) ecosystem.
 
-> **Android only.** For Flutter apps (both Android + iOS), use [Glint-Capture](../Glint-Capture) instead — no device needed.
+> **Android only.** For Flutter apps (both Android + iOS), use [Glint-Capture](../Glint-Capture) instead.
 
-## Requirements
+## Install
 
-- Python 3.10+
-- [ADB](https://developer.android.com/tools/releases/platform-tools) (Android Debug Bridge)
-- Android device with USB debugging enabled
+```bash
+pip install -r requirements.txt
+```
 
-### Install ADB
+Also requires [ADB](https://developer.android.com/tools/releases/platform-tools):
 
 ```bash
 # Windows
@@ -23,33 +23,45 @@ brew install android-platform-tools
 sudo apt install android-tools-adb
 ```
 
-### Check setup
+## Commands
 
 ```bash
-python -m bridge.main check
-```
-
-## Quick Start
-
-```bash
-pip install -r requirements.txt
+# First time — check everything works
+python glint.py check
 
 # List connected devices
-python -m bridge.main devices
+python glint.py devices
 
-# Capture single screenshot
-python -m bridge.main capture --app "My App"
+# Capture one screenshot
+python glint.py capture
 
 # Capture 5 screenshots
-python -m bridge.main batch --count 5
+python glint.py batch 5
 
-# Start WebSocket server (connects to Glint-Web)
-python -m bridge.main server
+# Start server (connect to Glint-Web)
+python glint.py start
+
+# Auto-crawl an app
+python glint.py crawl com.example.app
 ```
 
-## Output
+### Shortcuts
 
-Screenshots and `session.json` are written to `output/`:
+```bash
+python glint.py snap      # same as capture
+python glint.py ls        # same as devices
+python glint.py multi 5   # same as batch 5
+```
+
+## How It Works
+
+1. Connect your Android phone via USB
+2. Run `python glint.py start`
+3. Note the pairing token in the console
+4. Open Glint-Web → enter the token
+5. Screenshots stream live to the editor
+
+## Output
 
 ```
 output/
@@ -58,18 +70,7 @@ output/
 └── session.json
 ```
 
-Import the `output/` folder into Glint-Web to apply templates and export store-ready assets.
-
-## WebSocket
-
-When running `server` mode, Bridge starts a WebSocket on `ws://localhost:7700`.
-
-1. Start the server: `python -m bridge.main server`
-2. Note the pairing token printed in the console
-3. Open Glint-Web → Editor → enter the token to connect
-4. Screenshots stream live to the editor
-
-See [Glint-Docs/reference/websocket-protocol.md](../Glint-Docs/reference/websocket-protocol.md) for the full protocol.
+Import `output/` into [Glint-Web](../Glint-Web) to apply templates and export.
 
 ## License
 
