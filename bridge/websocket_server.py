@@ -126,7 +126,7 @@ async def handler(websocket):
 
 
 async def start_server(host: str = "0.0.0.0", port: int = WS_PORT):
-    print(f"Telor Bridge WebSocket server on ws://{host}:{port}")
+    print(f"Glint Bridge WebSocket server on ws://{host}:{port}")
     async with websockets.serve(handler, host, port):
         await asyncio.Future()
 

@@ -10,4 +10,4 @@ fi
 source venv/bin/activate
 pip install -r requirements.txt
 
-echo "Telor Bridge ready. Run: scripts/run.sh"
+echo "Glint Bridge ready. Run: scripts/run.sh"

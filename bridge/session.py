@@ -13,7 +13,7 @@ def write_session(
     store: str = "play",
     output_dir: Path | None = None,
 ) -> str:
-    """Write session.json to output directory per Telor schema."""
+    """Write session.json to output directory per Glint schema."""
     out = output_dir or OUTPUT_DIR
     out.mkdir(parents=True, exist_ok=True)
 

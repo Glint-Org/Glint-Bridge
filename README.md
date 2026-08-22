@@ -1,14 +1,14 @@
-# Telor Bridge
+# Glint Bridge
 
-ADB-based screenshot capture engine for Android devices. Part of the Telor ecosystem.
+ADB-based screenshot capture engine for Android devices. Part of the Glint ecosystem.
 
 ## Features
 
 - USB and WiFi ADB device connection
 - Single and batch screenshot capture
 - Appium auto-crawl mode (optional)
-- WebSocket server for Telor Web integration
-- Automatic `session.json` generation for Telor Web import
+- WebSocket server for Glint Web integration
+- Automatic `session.json` generation for Glint Web import
 
 ## Quick Start
 
@@ -32,11 +32,11 @@ output/
 └── session.json
 ```
 
-Import the `output/` folder into Telor Web to apply templates and export store-ready assets.
+Import the `output/` folder into Glint Web to apply templates and export store-ready assets.
 
 ## WebSocket
 
-See [Telor-Docs/reference/websocket-protocol.md](../Telor-Docs/reference/websocket-protocol.md) for the full protocol.
+See [Glint-Docs/reference/websocket-protocol.md](../Glint-Docs/reference/websocket-protocol.md) for the full protocol.
 
 ## License
 

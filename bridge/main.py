@@ -12,7 +12,7 @@ OUTPUT_DIR = Path(__file__).resolve().parent.parent / "output"
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="telor-bridge")
+    parser = argparse.ArgumentParser(prog="glint-bridge")
     parser.add_argument("mode", nargs="?", default="server",
                         choices=["server", "capture", "batch", "devices", "crawl"])
     parser.add_argument("--count", type=int, default=5, help="Batch capture count")
