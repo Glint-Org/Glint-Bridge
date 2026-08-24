@@ -1,6 +1,6 @@
 # Glint Bridge
 
-ADB-based screenshot capture for Android devices. Part of the [Glint](https://github.com/darkmintis/Glint-Org) ecosystem.
+ADB-based screenshot capture for Android devices. Part of the [Glint](https://github.com/Glint-Org) ecosystem.
 
 > **Android only.** For Flutter apps (both Android + iOS), use [Glint-Capture](../Glint-Capture) instead.
 
