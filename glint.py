@@ -1,5 +1,5 @@
 """
-Glint — simple CLI for screenshot capture.
+Glint - simple CLI for screenshot capture.
 
 Usage:
     python glint.py check          Verify ADB is installed
@@ -35,7 +35,7 @@ ALIASES = {
 }
 
 USAGE = """
-Glint Bridge — Android screenshot capture
+Glint Bridge - Android screenshot capture
 
 Commands:
   python glint.py check            Check if ADB is installed

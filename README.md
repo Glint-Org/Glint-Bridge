@@ -26,7 +26,7 @@ sudo apt install android-tools-adb
 ## Commands
 
 ```bash
-# First time — check everything works
+# First time - check everything works
 python glint.py check
 
 # List connected devices
