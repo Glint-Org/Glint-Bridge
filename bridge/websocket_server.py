@@ -113,6 +113,11 @@ async def handler(websocket):
                 max_screens = data.get("max_screens", 20)
                 app = data.get("app", "Captured App")
                 tagline = data.get("tagline")
+                # AI key always from server env — never trust client-supplied secrets
+                if "use_ai" not in data:
+                    use_ai = None
+                else:
+                    use_ai = bool(data.get("use_ai"))
                 if not package:
                     await websocket.send(json.dumps({
                         "type": "error",
@@ -120,7 +125,50 @@ async def handler(websocket):
                     }))
                 else:
                     try:
-                        paths = crawl_app(package, max_screens=max_screens)
+                        paths = crawl_app(
+                            package,
+                            max_screens=max_screens,
+                            use_ai=use_ai,
+                        )
+                        write_session(
+                            screens=[Path(p).name for p in paths],
+                            app=app,
+                            tagline=tagline,
+                            output_dir=OUTPUT_DIR,
+                        )
+                        session = load_session()
+                        await websocket.send(json.dumps({
+                            "type": "crawl_result",
+                            "paths": paths,
+                            "data_urls": _paths_to_data_urls(paths),
+                            "session": session,
+                        }))
+                    except RuntimeError as e:
+                        await websocket.send(json.dumps({
+                            "type": "error",
+                            "message": str(e),
+                        }))
+
+            elif action == "crawl_web":
+                url = data.get("url")
+                max_screens = data.get("max_screens", 12)
+                app = data.get("app", "Captured App")
+                tagline = data.get("tagline")
+                use_ai = True if data.get("use_ai") else (False if data.get("use_ai") is False else None)
+                if not url:
+                    await websocket.send(json.dumps({
+                        "type": "error",
+                        "message": "url is required for crawl_web action",
+                    }))
+                else:
+                    try:
+                        from .web_crawler import crawl_web
+
+                        paths = crawl_web(
+                            url,
+                            max_screens=max_screens,
+                            use_ai=use_ai,
+                        )
                         write_session(
                             screens=[Path(p).name for p in paths],
                             app=app,

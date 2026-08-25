@@ -8,6 +8,8 @@ Usage:
     python glint.py batch 5        Capture 5 screenshots
     python glint.py start          Start server (connect to Glint-Web)
     python glint.py crawl com.app  Auto-crawl an app
+    python glint.py crawl com.app --ai
+    python glint.py crawl-web https://example.com --ai
 """
 import sys
 import os
@@ -31,19 +33,30 @@ ALIASES = {
     "ws": "server",
     "crawl": "crawl",
     "auto": "crawl",
+    "crawl-web": "crawl-web",
+    "web": "crawl-web",
     "help": None,
 }
 
 USAGE = """
-Glint Bridge - Android screenshot capture
+Glint Bridge - Android / web screenshot capture
 
 Commands:
-  python glint.py check            Check if ADB is installed
-  python glint.py devices          List connected Android devices
-  python glint.py capture          Capture one screenshot
-  python glint.py batch 5          Capture 5 screenshots
-  python glint.py start            Start WebSocket server for Glint-Web
-  python glint.py crawl com.app    Auto-crawl an app (requires Appium)
+  python glint.py check                 Check ADB (+ AI key status)
+  python glint.py devices               List connected Android devices
+  python glint.py capture               Capture one screenshot
+  python glint.py batch 5               Capture 5 screenshots
+  python glint.py start                 WebSocket server for Glint-Web
+  python glint.py crawl com.app         Heuristic Appium crawl
+  python glint.py crawl com.app --ai    Intelligent crawl (your API key)
+  python glint.py crawl-web URL --ai    Intelligent web crawl (Playwright)
+
+AI (local-first, your key):
+  export GLINT_AI_API_KEY=sk-...
+  # or OPENAI_API_KEY / ANTHROPIC_API_KEY
+  # optional: GLINT_AI_PROVIDER=openai|anthropic|compatible
+  #           GLINT_AI_MODEL=gpt-4o-mini
+  #           GLINT_AI_BASE_URL=https://...   # compatible endpoints
 
 Shortcuts:
   python glint.py snap    = capture
@@ -67,8 +80,10 @@ def resolve_command(args: list[str]) -> list[str]:
 
     if cmd not in ALIASES:
         # Might be a package name for crawl mode
-        if "." in cmd:
+        if "." in cmd and not cmd.startswith("http"):
             return ["crawl", "--package", cmd] + args[1:]
+        if cmd.startswith("http://") or cmd.startswith("https://"):
+            return ["crawl-web", "--url", cmd] + args[1:]
         print(f"Unknown command: {cmd}")
         print(USAGE)
         sys.exit(1)
@@ -80,8 +95,14 @@ def resolve_command(args: list[str]) -> list[str]:
 
     remaining = args[1:]
 
-    if mode == "batch" and remaining:
+    if mode == "batch" and remaining and not remaining[0].startswith("-"):
         return ["batch", "--count", remaining[0]] + remaining[1:]
+
+    if mode == "crawl" and remaining and not remaining[0].startswith("-"):
+        return ["crawl", "--package", remaining[0]] + remaining[1:]
+
+    if mode == "crawl-web" and remaining and not remaining[0].startswith("-"):
+        return ["crawl-web", "--url", remaining[0]] + remaining[1:]
 
     return [mode] + remaining
 

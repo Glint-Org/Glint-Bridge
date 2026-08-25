@@ -20,7 +20,12 @@ def _run_adb(args: list[str], capture: bool = True) -> subprocess.CompletedProce
         return None
 
 
-def capture_screenshot(serial: str | None = None, filename: str | None = None) -> str | None:
+def capture_screenshot(
+    serial: str | None = None,
+    filename: str | None = None,
+    *,
+    update_session: bool = True,
+) -> str | None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     if filename is None:
@@ -44,7 +49,8 @@ def capture_screenshot(serial: str | None = None, filename: str | None = None) -
         dest.unlink(missing_ok=True)
         return None
 
-    update_session_with_capture(str(dest))
+    if update_session:
+        update_session_with_capture(str(dest))
     return str(dest)
 
 
