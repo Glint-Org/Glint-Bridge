@@ -1,8 +1,8 @@
 # Glint Bridge
 
-ADB-based screenshot capture for Android devices. Part of the [Glint](https://github.com/Glint-Org) ecosystem.
+ADB screenshot capture for **Android** devices. Part of [Glint](https://github.com/Glint-Org).
 
-> **Android only.** For Flutter apps (both Android + iOS), use [Glint-Capture](../Glint-Capture) instead.
+> For Flutter (Android + iOS store sizes without a device), use [Glint-Capture](../Glint-Capture).
 
 ## Install
 
@@ -10,67 +10,48 @@ ADB-based screenshot capture for Android devices. Part of the [Glint](https://gi
 pip install -r requirements.txt
 ```
 
-Also requires [ADB](https://developer.android.com/tools/releases/platform-tools):
+Requires [ADB](https://developer.android.com/tools/releases/platform-tools):
 
 ```bash
-# Windows
-winget install Google.PlatformTools
-
-# macOS
-brew install android-platform-tools
-
 # Linux
 sudo apt install android-tools-adb
+# macOS
+brew install android-platform-tools
+# Windows
+winget install Google.PlatformTools
 ```
 
 ## Commands
 
 ```bash
-# First time - check everything works
-python glint.py check
+python glint.py check      # ADB + deps
+python glint.py devices    # list USB / Wi‑Fi
+python glint.py capture    # one PNG → output/
+python glint.py batch 5    # five PNGs + session.json
+python glint.py start      # WebSocket for Glint Web
+```
 
-# List connected devices
-python glint.py devices
+### Crawl (optional)
 
-# Capture one screenshot
-python glint.py capture
+Needs Appium. Uncomment `Appium-Python-Client` in `requirements.txt`, then:
 
-# Capture 5 screenshots
-python glint.py batch 5
-
-# Start server (connect to Glint-Web)
-python glint.py start
-
-# Auto-crawl an app
+```bash
 python glint.py crawl com.example.app
 ```
 
-### Shortcuts
+## Security (WebSocket)
 
-```bash
-python glint.py snap      # same as capture
-python glint.py ls        # same as devices
-python glint.py multi 5   # same as batch 5
-```
+- Binds to **`127.0.0.1:7700` only** (loopback)
+- Prints a **pairing token** on start; Glint Web must pair before capture
+- Capture responses include **`data_url`** (base64 PNG) so the browser can display shots
 
-## How It Works
+Never bind `0.0.0.0` in production use.
 
-1. Connect your Android phone via USB
-2. Run `python glint.py start`
-3. Note the pairing token in the console
-4. Open Glint-Web → enter the token
-5. Screenshots stream live to the editor
+## Glint Web
 
-## Output
-
-```
-output/
-├── screenshot_0001.png
-├── batch_0001.png
-└── session.json
-```
-
-Import `output/` into [Glint-Web](../Glint-Web) to apply templates and export.
+1. `python glint.py start` — copy the token
+2. In Web editor, paste token if prompted → Pair
+3. **Capture from Device** in Assets
 
 ## License
 
