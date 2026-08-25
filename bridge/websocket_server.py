@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import json
 import secrets
 from pathlib import Path
@@ -23,7 +24,26 @@ _PAIRING_TOKEN: str | None = None
 
 
 def _generate_token() -> str:
-    return secrets.token_hex(4)
+    return secrets.token_hex(8)
+
+
+def _file_to_data_url(path: str | Path) -> str | None:
+    """Encode a local PNG as a data URL so Glint-Web can display it in-browser."""
+    try:
+        raw = Path(path).read_bytes()
+    except OSError:
+        return None
+    b64 = base64.b64encode(raw).decode("ascii")
+    return f"data:image/png;base64,{b64}"
+
+
+def _paths_to_data_urls(paths: list) -> list[str]:
+    out = []
+    for p in paths:
+        url = _file_to_data_url(p)
+        if url:
+            out.append(url)
+    return out
 
 
 async def handler(websocket):
@@ -60,9 +80,11 @@ async def handler(websocket):
             elif action == "capture_single":
                 path = capture_screenshot()
                 session = load_session()
+                data_url = _file_to_data_url(path)
                 await websocket.send(json.dumps({
                     "type": "screenshot",
                     "path": path,
+                    "data_url": data_url,
                     "session": session,
                 }))
 
@@ -82,6 +104,7 @@ async def handler(websocket):
                 await websocket.send(json.dumps({
                     "type": "batch_result",
                     "paths": paths,
+                    "data_urls": _paths_to_data_urls(paths),
                     "session": session,
                 }))
 
@@ -108,6 +131,7 @@ async def handler(websocket):
                         await websocket.send(json.dumps({
                             "type": "crawl_result",
                             "paths": paths,
+                            "data_urls": _paths_to_data_urls(paths),
                             "session": session,
                         }))
                     except RuntimeError as e:
