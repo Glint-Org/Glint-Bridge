@@ -6,6 +6,11 @@ OUTPUT_DIR = Path(__file__).resolve().parent.parent / "output"
 SESSION_FILE = "session.json"
 
 
+def _screen_basename(path: str) -> str:
+    """Basename for posix or Windows-style capture paths."""
+    return Path(str(path).replace("\\", "/")).name
+
+
 def write_session(
     screens: list[str],
     app: str = "Captured App",
@@ -19,7 +24,7 @@ def write_session(
 
     session = {
         "app": app,
-        "screens": [Path(s).name if "/" in s or "\\" in s else s for s in screens],
+        "screens": [_screen_basename(s) for s in screens],
         "store": store,
         "version": "1.0",
         "exportedAt": datetime.now(timezone.utc).isoformat(),
@@ -49,7 +54,7 @@ def update_session_with_capture(filename: str, output_dir: Path | None = None) -
         tagline = data.get("tagline")
         store = data.get("store", store)
 
-    basename = Path(filename).name
+    basename = _screen_basename(filename)
     if basename not in screens:
         screens.append(basename)
 

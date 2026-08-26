@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from bridge.session import write_session, load_session, update_session_with_capture
+from bridge.session import load_session, update_session_with_capture, write_session
 
 
 class TestSession(unittest.TestCase):
@@ -27,12 +27,41 @@ class TestSession(unittest.TestCase):
         self.assertEqual(session["screens"], ["home.png", "profile.png"])
         self.assertEqual(session["store"], "play")
         self.assertEqual(session["version"], "1.0")
+        self.assertIn("exportedAt", session)
 
-    def test_update_session_appends_screen(self):
+    def test_write_session_strips_directory_prefixes(self):
+        write_session(
+            screens=["android/pixel9/home.png", r"ios\iphone\detail.png"],
+            app="Paths",
+            store="play/phone",
+            output_dir=self.out,
+        )
+        session = load_session(self.out)
+        self.assertEqual(session["screens"], ["home.png", "detail.png"])
+        self.assertEqual(session["store"], "play/phone")
+
+    def test_update_session_appends_unique_screens(self):
         write_session(screens=["a.png"], app="App", output_dir=self.out)
+        update_session_with_capture("b.png", output_dir=self.out)
         update_session_with_capture("b.png", output_dir=self.out)
         session = load_session(self.out)
         self.assertEqual(session["screens"], ["a.png", "b.png"])
+
+    def test_update_creates_session_when_missing(self):
+        update_session_with_capture("first.png", output_dir=self.out)
+        session = load_session(self.out)
+        self.assertEqual(session["screens"], ["first.png"])
+        self.assertEqual(session["app"], "Captured App")
+
+    def test_load_missing_session_returns_none(self):
+        self.assertIsNone(load_session(self.out))
+
+    def test_session_json_is_pretty_printed(self):
+        write_session(screens=["a.png"], app="Pretty", output_dir=self.out)
+        raw = (self.out / "session.json").read_text()
+        data = json.loads(raw)
+        self.assertEqual(data["app"], "Pretty")
+        self.assertIn("\n", raw)
 
 
 if __name__ == "__main__":
