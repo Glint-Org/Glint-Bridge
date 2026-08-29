@@ -91,13 +91,9 @@ async def handler(websocket):
             elif action == "capture_batch":
                 count = data.get("count", 5)
                 paths = batch_capture(count=count)
-                app = data.get("app", "Captured App")
-                tagline = data.get("tagline")
                 if paths:
                     write_session(
                         screens=[Path(p).name for p in paths],
-                        app=app,
-                        tagline=tagline,
                         output_dir=OUTPUT_DIR,
                     )
                 session = load_session()
@@ -111,8 +107,6 @@ async def handler(websocket):
             elif action == "crawl":
                 package = data.get("package")
                 max_screens = data.get("max_screens", 20)
-                app = data.get("app", "Captured App")
-                tagline = data.get("tagline")
                 # AI key always from server env — never trust client-supplied secrets
                 if "use_ai" not in data:
                     use_ai = None
@@ -132,8 +126,6 @@ async def handler(websocket):
                         )
                         write_session(
                             screens=[Path(p).name for p in paths],
-                            app=app,
-                            tagline=tagline,
                             output_dir=OUTPUT_DIR,
                         )
                         session = load_session()
@@ -152,8 +144,6 @@ async def handler(websocket):
             elif action == "crawl_web":
                 url = data.get("url")
                 max_screens = data.get("max_screens", 12)
-                app = data.get("app", "Captured App")
-                tagline = data.get("tagline")
                 use_ai = True if data.get("use_ai") else (False if data.get("use_ai") is False else None)
                 if not url:
                     await websocket.send(json.dumps({
@@ -171,8 +161,6 @@ async def handler(websocket):
                         )
                         write_session(
                             screens=[Path(p).name for p in paths],
-                            app=app,
-                            tagline=tagline,
                             output_dir=OUTPUT_DIR,
                         )
                         session = load_session()

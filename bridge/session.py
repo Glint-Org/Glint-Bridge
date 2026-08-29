@@ -13,8 +13,6 @@ def _screen_basename(path: str) -> str:
 
 def write_session(
     screens: list[str],
-    app: str = "Captured App",
-    tagline: str | None = None,
     store: str = "play",
     output_dir: Path | None = None,
 ) -> str:
@@ -23,14 +21,11 @@ def write_session(
     out.mkdir(parents=True, exist_ok=True)
 
     session = {
-        "app": app,
         "screens": [_screen_basename(s) for s in screens],
         "store": store,
         "version": "1.0",
         "exportedAt": datetime.now(timezone.utc).isoformat(),
     }
-    if tagline:
-        session["tagline"] = tagline
 
     dest = out / SESSION_FILE
     dest.write_text(json.dumps(session, indent=2))
@@ -43,22 +38,18 @@ def update_session_with_capture(filename: str, output_dir: Path | None = None) -
     session_path = out / SESSION_FILE
 
     screens = []
-    app = "Captured App"
-    tagline = None
     store = "play"
 
     if session_path.exists():
         data = json.loads(session_path.read_text())
         screens = data.get("screens", [])
-        app = data.get("app", app)
-        tagline = data.get("tagline")
         store = data.get("store", store)
 
     basename = _screen_basename(filename)
     if basename not in screens:
         screens.append(basename)
 
-    return write_session(screens, app=app, tagline=tagline, store=store, output_dir=out)
+    return write_session(screens, store=store, output_dir=out)
 
 
 def load_session(output_dir: Path | None = None) -> dict | None:

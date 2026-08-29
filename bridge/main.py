@@ -42,8 +42,6 @@ def main():
         choices=["server", "capture", "batch", "devices", "crawl", "crawl-web", "check"],
     )
     parser.add_argument("--count", type=int, default=5, help="Batch capture count")
-    parser.add_argument("--app", type=str, default="Captured App", help="App name for session.json")
-    parser.add_argument("--tagline", type=str, default=None, help="Tagline for session.json")
     parser.add_argument("--package", type=str, default=None, help="App package for crawl mode")
     parser.add_argument("--url", type=str, default=None, help="Start URL for crawl-web")
     parser.add_argument("--max-screens", type=int, default=20, help="Max explore steps for crawl")
@@ -112,8 +110,6 @@ def main():
         if path:
             write_session(
                 screens=[Path(path).name],
-                app=args.app,
-                tagline=args.tagline,
                 output_dir=OUTPUT_DIR,
             )
             print(f"Saved: {path}")
@@ -127,8 +123,6 @@ def main():
         if paths:
             write_session(
                 screens=[Path(p).name for p in paths],
-                app=args.app,
-                tagline=args.tagline,
                 output_dir=OUTPUT_DIR,
             )
         print(f"Captured {len(paths)} screenshot(s):")
@@ -151,8 +145,6 @@ def main():
             )
             write_session(
                 screens=[Path(p).name for p in paths],
-                app=args.app,
-                tagline=args.tagline,
                 output_dir=OUTPUT_DIR,
             )
             print(f"Crawled {len(paths)} kept screenshot(s):")
@@ -181,8 +173,6 @@ def main():
             )
             write_session(
                 screens=[Path(p).name for p in paths],
-                app=args.app,
-                tagline=args.tagline,
                 output_dir=OUTPUT_DIR,
             )
             print(f"Web crawl kept {len(paths)} screenshot(s):")
