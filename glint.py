@@ -10,6 +10,9 @@ Usage:
     python glint.py crawl com.app  Auto-crawl an app
     python glint.py crawl com.app --ai
     python glint.py crawl-web https://example.com --ai
+    python glint.py inspect --template blink
+    python glint.py inspect --pack project.glint
+    python glint.py extract-theme output/
 """
 import sys
 import os
@@ -35,6 +38,9 @@ ALIASES = {
     "auto": "crawl",
     "crawl-web": "crawl-web",
     "web": "crawl-web",
+    "inspect": "inspect",
+    "extract-theme": "extract-theme",
+    "theme": "extract-theme",
     "help": None,
 }
 
@@ -50,6 +56,10 @@ Commands:
   python glint.py crawl com.app         Heuristic Appium crawl
   python glint.py crawl com.app --ai    Intelligent crawl (your API key)
   python glint.py crawl-web URL --ai    Intelligent web crawl (Playwright)
+  python glint.py inspect --template blink   Template palette + headlines (JSON)
+  python glint.py inspect --pack file.glint  Read exported .glint project
+  python glint.py extract-theme output/      Dominant colors from screenshots
+  python glint.py theme output/ --template blink   Map colors to template slots
 
 AI (local-first, your key):
   export GLINT_AI_API_KEY=sk-...

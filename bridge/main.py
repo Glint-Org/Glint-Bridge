@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import shutil
 import sys
@@ -39,8 +40,11 @@ def main():
         "mode",
         nargs="?",
         default="server",
-        choices=["server", "capture", "batch", "devices", "crawl", "crawl-web", "check"],
+        choices=["server", "capture", "batch", "devices", "crawl", "crawl-web", "check", "inspect", "extract-theme"],
     )
+    parser.add_argument("--template", type=str, default=None, help="Template family id for inspect mode")
+    parser.add_argument("--pack", type=str, default=None, help=".glint / .glintpack path for inspect mode")
+    parser.add_argument("paths", nargs="*", help="PNG paths or folders for extract-theme")
     parser.add_argument("--count", type=int, default=5, help="Batch capture count")
     parser.add_argument("--package", type=str, default=None, help="App package for crawl mode")
     parser.add_argument("--url", type=str, default=None, help="Start URL for crawl-web")
@@ -182,6 +186,55 @@ def main():
         except RuntimeError as e:
             print(f"Web crawl failed: {e}")
             sys.exit(1)
+
+    elif args.mode == "inspect":
+        from .pack_inspect import load_template_family, pack_summary, read_glint, template_summary
+
+        if args.template:
+            try:
+                data = template_summary(load_template_family(args.template))
+            except FileNotFoundError as e:
+                print(f"Error: {e}")
+                sys.exit(1)
+            print(json.dumps(data, indent=2))
+        elif args.pack:
+            pack_path = Path(args.pack)
+            if not pack_path.is_file():
+                print(f"Error: pack not found: {pack_path}")
+                sys.exit(1)
+            print(json.dumps(pack_summary(read_glint(pack_path)), indent=2))
+        else:
+            print("Error: use --template FAMILY or --pack PATH.glint")
+            sys.exit(1)
+
+    elif args.mode == "extract-theme":
+        from .pack_inspect import extract_theme_from_paths, map_colors_to_palette, resolve_image_paths
+
+        paths = resolve_image_paths(args.paths)
+        if not paths:
+            print("Error: pass PNG paths or a folder (e.g. output/)")
+            sys.exit(1)
+        try:
+            slot_ids = None
+            if args.template:
+                from .pack_inspect import load_template_family
+
+                tpl = load_template_family(args.template)
+                slot_ids = [s.get("id") or f"c{i}" for i, s in enumerate(tpl.get("palette") or [])]
+            theme = extract_theme_from_paths(paths, slot_ids=slot_ids)
+        except RuntimeError as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+        out = {"theme": theme, "sources": [str(p) for p in paths]}
+        if args.template:
+            try:
+                from .pack_inspect import load_template_family
+
+                template = load_template_family(args.template)
+                out["mapped"] = map_colors_to_palette(template.get("palette") or [], theme)
+            except FileNotFoundError as e:
+                print(f"Warning: {e}", file=sys.stderr)
+        print(json.dumps(out, indent=2))
 
     else:
         from .websocket_server import run as run_ws

@@ -31,6 +31,17 @@ python glint.py batch 5    # five PNGs + session.json
 python glint.py start      # WebSocket for Glint Web
 ```
 
+### Inspect templates & theme
+
+Read Glint-Web template JSON or exported `.glint` packs; sample dominant colors from PNG screenshots (`pip install Pillow` for extract):
+
+```bash
+python glint.py inspect --template blink
+python glint.py inspect --pack my-project.glint
+python glint.py extract-theme output/
+python glint.py theme output/ --template blink   # map colors to template slots
+```
+
 ### Crawl (Android)
 
 Needs Appium. Uncomment `Appium-Python-Client` in `requirements.txt`, start Appium on `:4723`, then:
