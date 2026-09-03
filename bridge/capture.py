@@ -3,7 +3,7 @@ import re
 import time
 from pathlib import Path
 
-from .session import update_session_with_capture, write_session
+from .session import write_session
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "output"
 
@@ -23,9 +23,8 @@ def _run_adb(args: list[str], capture: bool = True) -> subprocess.CompletedProce
 def capture_screenshot(
     serial: str | None = None,
     filename: str | None = None,
-    *,
-    update_session: bool = True,
 ) -> str | None:
+    """Capture a single screenshot via ADB. Returns the file path or None."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     if filename is None:
@@ -49,12 +48,11 @@ def capture_screenshot(
         dest.unlink(missing_ok=True)
         return None
 
-    if update_session:
-        update_session_with_capture(str(dest))
     return str(dest)
 
 
 def batch_capture(serial: str | None = None, count: int = 5, delay: float = 1.0) -> list[str]:
+    """Capture N screenshots with delay between each. Returns list of file paths."""
     paths = []
     for i in range(count):
         path = capture_screenshot(serial, f"batch_{i+1:04d}.png")
@@ -62,24 +60,4 @@ def batch_capture(serial: str | None = None, count: int = 5, delay: float = 1.0)
             paths.append(path)
         if i < count - 1:
             time.sleep(delay)
-
-    if paths:
-        write_session(
-            screens=[Path(p).name for p in paths],
-            app="Captured App",
-            output_dir=OUTPUT_DIR,
-        )
     return paths
-
-
-def get_device_resolution(serial: str | None = None) -> tuple[int, int] | None:
-    cmd = ["shell", "wm", "size"]
-    if serial:
-        cmd = ["-s", serial, "shell", "wm", "size"]
-    result = _run_adb(cmd)
-    if result is None:
-        return None
-    match = re.search(r"(\d+)x(\d+)", result.stdout)
-    if match:
-        return int(match.group(1)), int(match.group(2))
-    return None
