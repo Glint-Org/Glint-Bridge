@@ -212,7 +212,7 @@ def crawl_app(
                 break
 
             filename = f"crawl_{step + 1:04d}.png"
-            path = capture_screenshot(filename=filename, update_session=False)
+            path = capture_screenshot(filename=filename)
             if not path:
                 log("Screenshot failed; stopping.")
                 break
