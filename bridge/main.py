@@ -43,7 +43,7 @@ def main():
         choices=["server", "capture", "batch", "devices", "crawl", "crawl-web", "check", "inspect", "extract-theme"],
     )
     parser.add_argument("--template", type=str, default=None, help="Template family id for inspect mode")
-    parser.add_argument("--pack", type=str, default=None, help=".glint / .glintpack path for inspect mode")
+    parser.add_argument("--pack", type=str, default=None, help=".glint path for inspect mode")
     parser.add_argument("paths", nargs="*", help="PNG paths or folders for extract-theme")
     parser.add_argument("--count", type=int, default=5, help="Batch capture count")
     parser.add_argument("--package", type=str, default=None, help="App package for crawl mode")
