@@ -11,9 +11,10 @@ from typing import Any
 GLINT_MAGIC = b"GLINT"
 DEFAULT_SLOTS = ("primary", "secondary", "accent", "soft", "background")
 
-SKIP_TOP = 0.10
-SKIP_BOTTOM = 0.12
-SKIP_SIDE = 0.08
+SKIP_TOP = 0.12
+SKIP_BOTTOM = 0.14
+SKIP_SIDE = 0.06
+HUE_BIN = 24
 
 
 def find_templates_root() -> Path | None:
@@ -124,18 +125,25 @@ def _hue_distance(a: float, b: float) -> float:
 
 
 def is_neutral_rgb(r: int, g: int, b: int) -> bool:
-    if r > 248 and g > 248 and b > 248:
+    if r > 245 and g > 245 and b > 245:
         return True
-    if r < 20 and g < 20 and b < 20:
+    if r < 18 and g < 18 and b < 18:
         return True
     sat = _saturation(r, g, b)
     lum = _luminance(r, g, b)
-    if sat < 0.14 and 0.12 < lum < 0.9:
+    if sat < 0.16 and 0.1 < lum < 0.92:
         return True
     return False
 
 
-def _bucket_key(r: int, g: int, b: int, bits: int = 4) -> str:
+def _brand_score(sat: float, lum: float, weight: float) -> float:
+    sat_score = max(0.0, sat) ** 1.35
+    lum_score = max(0.12, 1 - abs(lum - 0.42) * 1.55)
+    area_score = max(1.0, weight) ** 0.3
+    return sat_score * lum_score * area_score
+
+
+def _bucket_key(r: int, g: int, b: int, bits: int = 5) -> str:
     shift = 8 - bits
     q = lambda v: (v >> shift) << shift  # noqa: E731
     return f"{q(r)},{q(g)},{q(b)}"
@@ -152,11 +160,67 @@ def _mix_hex(a: str, b: str, t: float) -> str:
     return _rgb_to_hex(lerp(r1, r2), lerp(g1, g2), lerp(b1, b2))
 
 
+def _rgb_to_hsl(r: int, g: int, b: int) -> tuple[float, float, float]:
+    rn, gn, bn = r / 255, g / 255, b / 255
+    mx, mn = max(rn, gn, bn), min(rn, gn, bn)
+    lum = (mx + mn) / 2
+    if mx == mn:
+        return 0.0, 0.0, lum
+    d = mx - mn
+    sat = d / (2 - mx - mn) if lum > 0.5 else d / (mx + mn)
+    if mx == rn:
+        h = ((gn - bn) / d + (6 if gn < bn else 0)) / 6
+    elif mx == gn:
+        h = ((bn - rn) / d + 2) / 6
+    else:
+        h = ((rn - gn) / d + 4) / 6
+    return h, sat, lum
+
+
+def _hsl_to_rgb(h: float, s: float, lum: float) -> tuple[int, int, int]:
+    if s <= 0:
+        v = int(round(lum * 255))
+        return v, v, v
+
+    def hue2rgb(p: float, q: float, t: float) -> float:
+        tt = t
+        if tt < 0:
+            tt += 1
+        if tt > 1:
+            tt -= 1
+        if tt < 1 / 6:
+            return p + (q - p) * 6 * tt
+        if tt < 1 / 2:
+            return q
+        if tt < 2 / 3:
+            return p + (q - p) * (2 / 3 - tt) * 6
+        return p
+
+    q = lum * (1 + s) if lum < 0.5 else lum + s - lum * s
+    p = 2 * lum - q
+    return (
+        int(round(hue2rgb(p, q, h + 1 / 3) * 255)),
+        int(round(hue2rgb(p, q, h) * 255)),
+        int(round(hue2rgb(p, q, h - 1 / 3) * 255)),
+    )
+
+
+def _punch_saturation(hex_color: str, amount: float = 0.12) -> str:
+    h = hex_color.lstrip("#").upper()
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    hh, ss, ll = _rgb_to_hsl(r, g, b)
+    if ss < 0.04:
+        return _rgb_to_hex(r, g, b)
+    ss = min(1.0, ss + amount * (1 - ss))
+    nr, ng, nb = _hsl_to_rgb(hh, ss, ll)
+    return _rgb_to_hex(nr, ng, nb)
+
+
 def _sample_weight(x: int, y: int, width: int, height: int) -> float:
-    cx, cy = width / 2, height / 2
-    nx, ny = (x - cx) / cx, (y - cy) / cy
+    cx, cy = width / 2, height * 0.38
+    nx, ny = (x - cx) / (width * 0.55), (y - cy) / (height * 0.55)
     dist = (nx * nx + ny * ny) ** 0.5
-    return max(0.15, 1 - dist * 0.85)
+    return max(0.2, 1.15 - dist * 0.95)
 
 
 def _in_content_region(x: int, y: int, width: int, height: int) -> bool:
@@ -174,7 +238,8 @@ def _counts_to_entries(counts: dict[str, int], accents_only: bool) -> list[dict[
         lum = _luminance(r, g, b)
         if accents_only and is_neutral_rgb(r, g, b):
             continue
-        score = weight * ((0.35 + sat * 0.65) if accents_only else (0.5 + lum * 0.5))
+        if accents_only and sat < 0.18:
+            continue
         entries.append(
             {
                 "r": r,
@@ -185,33 +250,77 @@ def _counts_to_entries(counts: dict[str, int], accents_only: bool) -> list[dict[
                 "sat": sat,
                 "lum": lum,
                 "hue": _rgb_to_hue(r, g, b),
-                "score": score,
+                "score": _brand_score(sat, lum, weight),
             }
         )
     entries.sort(key=lambda e: e["score"], reverse=True)
     return entries
 
 
-def _pick_distinct(entries: list[dict[str, Any]], used: list[dict[str, Any]], min_hue: float = 22) -> dict[str, Any] | None:
+def _cluster_accents_by_hue(entries: list[dict[str, Any]], bin_deg: int = HUE_BIN) -> list[dict[str, Any]]:
+    bins: dict[int, dict[str, Any]] = {}
     for entry in entries:
-        if any(u["hex"] == entry["hex"] for u in used):
+        if entry["hue"] < 0:
             continue
-        if used and entry["hue"] >= 0 and all(
-            u["hue"] >= 0 and _hue_distance(u["hue"], entry["hue"]) < min_hue for u in used
-        ):
-            continue
-        return entry
-    return None
+        bin_id = int(round(entry["hue"] / bin_deg) * bin_deg) % 360
+        cur = bins.get(bin_id) or {"hue": bin_id, "entries": [], "weight": 0.0, "score": 0.0}
+        cur["entries"].append(entry)
+        cur["weight"] += entry["weight"]
+        cur["score"] += entry["score"]
+        bins[bin_id] = cur
+    return sorted(bins.values(), key=lambda c: c["score"], reverse=True)
+
+
+def _pick_cluster_representative(cluster: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not cluster or not cluster.get("entries"):
+        return None
+    ranked = sorted(
+        cluster["entries"],
+        key=lambda e: e["sat"] * (1 - abs(e["lum"] - 0.42)) * (e["weight"] ** 0.25),
+        reverse=True,
+    )
+    return ranked[0]
 
 
 def _pick_background(neutral_entries: list[dict[str, Any]]) -> str:
-    light = sorted([e for e in neutral_entries if e["lum"] >= 0.78], key=lambda e: e["weight"], reverse=True)
-    if light:
-        return light[0]["hex"]
-    any_sorted = sorted(neutral_entries, key=lambda e: e["weight"], reverse=True)
-    if any_sorted and any_sorted[0]["lum"] >= 0.55:
-        return any_sorted[0]["hex"]
-    return "#FFFFFF"
+    if not neutral_entries:
+        return "#FFFFFF"
+    total = sum(e["weight"] for e in neutral_entries) or 1
+    mean_lum = sum(e["lum"] * e["weight"] for e in neutral_entries) / total
+    if mean_lum >= 0.55:
+        light = sorted(
+            [e for e in neutral_entries if e["lum"] >= 0.82 and e["sat"] < 0.12],
+            key=lambda e: e["weight"],
+            reverse=True,
+        )
+        if light:
+            return light[0]["hex"]
+        return "#FFFFFF"
+    dark = sorted(
+        [e for e in neutral_entries if e["lum"] <= 0.22 and e["sat"] < 0.15],
+        key=lambda e: e["weight"],
+        reverse=True,
+    )
+    if dark:
+        return dark[0]["hex"]
+    return "#121212"
+
+
+def _build_harmony_from_primary(primary_hex: str, background_hex: str) -> dict[str, str]:
+    primary = _punch_saturation(primary_hex, 0.1)
+    bg = background_hex or "#FFFFFF"
+    bh = bg.lstrip("#")
+    bg_lum = _luminance(int(bh[0:2], 16), int(bh[2:4], 16), int(bh[4:6], 16))
+    secondary = _mix_hex(primary, "#000000", 0.2 if bg_lum > 0.5 else 0.12)
+    accent = _mix_hex(primary, "#FFFFFF", 0.22 if bg_lum > 0.5 else 0.3)
+    soft = _mix_hex(primary, "#FFFFFF" if bg_lum > 0.5 else bg, 0.62)
+    return {
+        "primary": primary,
+        "secondary": secondary,
+        "accent": accent,
+        "soft": soft,
+        "background": bg,
+    }
 
 
 def build_theme_from_counts(
@@ -222,30 +331,23 @@ def build_theme_from_counts(
     slots = list(slot_ids or DEFAULT_SLOTS)
     accents = _counts_to_entries(accent_counts, accents_only=True)
     neutrals = _counts_to_entries(neutral_counts, accents_only=False)
-
-    primary_entry = _pick_distinct(accents, [], 0) or (accents[0] if accents else None)
-    primary = primary_entry["hex"] if primary_entry else "#611AB4"
-    used = [primary_entry] if primary_entry else []
-
-    secondary_entry = _pick_distinct(accents, used, 22)
-    secondary = secondary_entry["hex"] if secondary_entry else _mix_hex(primary, "#000000", 0.22)
-    if secondary_entry:
-        used.append(secondary_entry)
-
-    accent_entry = _pick_distinct(accents, used, 18)
-    accent = accent_entry["hex"] if accent_entry else _mix_hex(primary, "#FFFFFF", 0.28)
-
-    soft = _mix_hex(primary, "#FFFFFF", 0.58)
     background = _pick_background(neutrals)
 
-    theme = {
-        "primary": primary,
-        "secondary": secondary,
-        "accent": accent,
-        "soft": soft,
-        "background": background,
-    }
-    return {slot: theme.get(slot, primary) for slot in slots}
+    clusters = _cluster_accents_by_hue(accents)
+    best = _pick_cluster_representative(clusters[0]) if clusters else (accents[0] if accents else None)
+    primary_hex = best["hex"] if best else "#611AB4"
+    harmony = _build_harmony_from_primary(primary_hex, background)
+
+    if (
+        len(clusters) > 1
+        and clusters[1]["score"] >= clusters[0]["score"] * 0.55
+        and _hue_distance(clusters[0]["hue"], clusters[1]["hue"]) >= 36
+    ):
+        second = _pick_cluster_representative(clusters[1])
+        if second and second["sat"] >= 0.28:
+            harmony["accent"] = _punch_saturation(second["hex"], 0.08)
+
+    return {slot: harmony.get(slot, harmony["primary"]) for slot in slots}
 
 
 def pick_theme_colors(counts: dict[str, int], max_colors: int = 5) -> list[str]:
@@ -253,7 +355,7 @@ def pick_theme_colors(counts: dict[str, int], max_colors: int = 5) -> list[str]:
     return [theme[slot] for slot in DEFAULT_SLOTS[:max_colors]]
 
 
-def extract_theme_from_png(path: Path, max_side: int = 200) -> tuple[dict[str, int], dict[str, int]]:
+def extract_theme_from_png(path: Path, max_side: int = 256) -> tuple[dict[str, int], dict[str, int]]:
     try:
         from PIL import Image
     except ImportError as e:
@@ -269,15 +371,15 @@ def extract_theme_from_png(path: Path, max_side: int = 200) -> tuple[dict[str, i
             im = im.resize((max(1, round(im.width * scale)), max(1, round(im.height * scale))))
         pixels = im.load()
         w, h = im.size
-        step = max(1, min(w, h) // 64)
+        step = max(1, min(w, h) // 80)
         for y in range(0, h, step):
             for x in range(0, w, step):
                 if not _in_content_region(x, y, w, h):
                     continue
                 r, g, b, a = pixels[x, y]
-                if a < 140:
+                if a < 160:
                     continue
-                bucket = max(1, round(_sample_weight(x, y, w, h) * 10))
+                bucket = max(1, round(_sample_weight(x, y, w, h) * 12))
                 key = _bucket_key(r, g, b)
                 neutral_counts[key] = neutral_counts.get(key, 0) + bucket
                 if not is_neutral_rgb(r, g, b):
