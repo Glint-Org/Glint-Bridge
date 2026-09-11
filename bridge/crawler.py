@@ -1,7 +1,7 @@
 """
 Android auto-crawl: heuristic by default, optional AI planner (user API key).
 
-Captures real device pixels only — AI navigates and filters, never draws UI.
+Captures real device pixels only - AI navigates and filters, never draws UI.
 """
 
 from __future__ import annotations

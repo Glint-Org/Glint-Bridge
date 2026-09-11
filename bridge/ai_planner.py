@@ -1,5 +1,5 @@
 """
-Intelligent crawl planner — user-owned API keys, navigate + score real screens.
+Intelligent crawl planner - user-owned API keys, navigate + score real screens.
 
 Never fabricates UI. AI only chooses actions and which captures to keep for store frames.
 """
@@ -25,7 +25,7 @@ Your job: navigate the app and capture 5-8 raw screenshots that will become Play
 
 RULES:
 - Never invent or describe fake UI. Only judge the provided screenshot + accessibility tree.
-- Screenshots are RAW device pixels — no crop, no resize. Glint Web handles framing/templates later.
+- Screenshots are RAW device pixels - no crop, no resize. Glint Web handles framing/templates later.
 - Capture at device native resolution (whatever the phone gives).
 
 SCREEN SELECTION (what to KEEP):

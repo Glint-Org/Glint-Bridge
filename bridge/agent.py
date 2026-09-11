@@ -34,7 +34,7 @@ def cmd_screenshot(serial: str | None, filename: str | None) -> dict:
 
     path = capture_screenshot(serial=serial, filename=filename)
     if not path:
-        return {"ok": False, "error": "screenshot failed — check device + USB debugging"}
+        return {"ok": False, "error": "screenshot failed - check device + USB debugging"}
     return {"ok": True, "path": path}
 
 

@@ -1,4 +1,4 @@
-# Glint-Bridge — Agent Instructions
+# Glint-Bridge - Agent Instructions
 
 ADB screenshot capture for Android apps. Real device, real pixels, no cropping.
 
@@ -8,12 +8,12 @@ ADB screenshot capture for Android apps. Real device, real pixels, no cropping.
 
 ## Primary commands
 
-- `python glint.py check` — verify ADB + AI status
-- `python glint.py devices` — list connected USB/WiFi ADB targets
-- `python glint.py capture` — single screenshot → output/
-- `python glint.py batch N` — N screenshots + session.json
-- `python glint.py crawl com.app.package [--ai]` — auto-navigate + capture
-- `python glint.py start` — WebSocket for Glint Web live pairing
+- `python glint.py check` - verify ADB + AI status
+- `python glint.py devices` - list connected USB/WiFi ADB targets
+- `python glint.py capture` - single screenshot → output/
+- `python glint.py batch N` - N screenshots + session.json
+- `python glint.py crawl com.app.package [--ai]` - auto-navigate + capture
+- `python glint.py start` - WebSocket for Glint Web live pairing
 
 ## Outputs
 
@@ -22,11 +22,11 @@ ADB screenshot capture for Android apps. Real device, real pixels, no cropping.
 
 ## Rules
 
-1. **Real device pixels only** — no cropping, no resizing, no fabrication
-2. Raw screenshots are NOT store-ready — they get polished in Glint-Web with templates/frames
+1. **Real device pixels only** - no cropping, no resizing, no fabrication
+2. Raw screenshots are NOT store-ready - they get polished in Glint-Web with templates/frames
 3. Capture at device native resolution (whatever the phone gives via `adb exec-out screencap -p`)
 4. Glint-Web handles: device frames, backgrounds, headlines, export at store sizes
-5. Never ask user for API keys — read from env only (GLINT_AI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY)
+5. Never ask user for API keys - read from env only (GLINT_AI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY)
 6. Bind WebSocket to localhost only (127.0.0.1:7700), never 0.0.0.0
 
 ## Decision Flow
@@ -35,8 +35,8 @@ ADB screenshot capture for Android apps. Real device, real pixels, no cropping.
 
 Do NOT ask which screens. Auto-crawl:
 
-1. `python glint.py check` — verify ADB installed
-2. `python glint.py devices` — confirm device connected
+1. `python glint.py check` - verify ADB installed
+2. `python glint.py devices` - confirm device connected
 3. If no device → tell developer: "Connect Android device via USB, enable USB debugging"
 4. If AI key available (GLINT_AI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY):
    `python glint.py crawl com.app.package --ai`
@@ -46,13 +46,13 @@ Do NOT ask which screens. Auto-crawl:
 
 ### Developer says: "capture 5 screenshots"
 
-1. `python glint.py devices` — confirm device
+1. `python glint.py devices` - confirm device
 2. `python glint.py batch --count 5`
 3. Tell developer: output is in `output/`
 
 ### Developer says: "capture single screenshot"
 
-1. `python glint.py devices` — confirm device
+1. `python glint.py devices` - confirm device
 2. `python glint.py capture`
 3. Single PNG in `output/`
 

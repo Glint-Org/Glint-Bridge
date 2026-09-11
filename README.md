@@ -47,10 +47,10 @@ python glint.py theme output/ --template blink   # map colors to template slots
 Needs Appium. Uncomment `Appium-Python-Client` in `requirements.txt`, start Appium on `:4723`, then:
 
 ```bash
-# Heuristic (scroll / tap) — no AI
+# Heuristic (scroll / tap) - no AI
 python glint.py crawl com.example.app
 
-# Intelligent — your key; AI navigates + keeps store-worthy real screens only
+# Intelligent - your key; AI navigates + keeps store-worthy real screens only
 export GLINT_AI_API_KEY=sk-...          # or OPENAI_API_KEY / ANTHROPIC_API_KEY
 python glint.py crawl com.example.app --ai
 ```
@@ -92,7 +92,7 @@ Never bind `0.0.0.0` in production use.
 
 ## Glint Web
 
-1. `python glint.py start` — copy the token
+1. `python glint.py start` - copy the token
 2. In Web editor, paste token if prompted → Pair
 3. **Capture from Device** in Assets  
    Or: crawl → drag `output/` into Web

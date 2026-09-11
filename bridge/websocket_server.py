@@ -107,7 +107,7 @@ async def handler(websocket):
             elif action == "crawl":
                 package = data.get("package")
                 max_screens = data.get("max_screens", 20)
-                # AI key always from server env — never trust client-supplied secrets
+                # AI key always from server env - never trust client-supplied secrets
                 if "use_ai" not in data:
                     use_ai = None
                 else:

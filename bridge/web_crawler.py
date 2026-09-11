@@ -1,7 +1,7 @@
 """
 Optional web crawl (Playwright) with the same AI planner as Android.
 
-Captures real browser screenshots only — never fabricates UI.
+Captures real browser screenshots only - never fabricates UI.
 """
 
 from __future__ import annotations

@@ -87,7 +87,7 @@ def main():
         if ai_key:
             try:
                 ai = resolve_ai_settings(use_ai=True, api_key=ai_key, provider=args.ai_provider, model=args.ai_model)
-                print(f"AI: ready — {ai.provider} / {ai.model}")
+                print(f"AI: ready - {ai.provider} / {ai.model}")
             except RuntimeError as e:
                 print(f"AI: not ready ({e})")
         else:
